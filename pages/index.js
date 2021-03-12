@@ -1,45 +1,52 @@
 import React from 'react'
 import Head from 'next/head'
+/* eslint-disable no-console */
+import express from 'express';
+import cors from 'cors';
+import morgan from 'morgan';
+import bodyParser from 'body-parser';
+import mongoose from 'mongoose';
+import routes from './server/routes';
 
-const Home = () => (
-  <div>
-    <h1>Next.js on the [JAMstack](https://jamstack.org)</h1>
+const app = express();
+const apiRouter = express.Router();
 
-    <h3>Hooray 🎉 - you've built this with <a href="https://nextjs.org">Next.js</a>!</h3>
+const env = process.env.NODE_ENV;
+let port = 8000;
+let db = 'mongodb://localhost:27017/journalApp';
 
-    <style jsx>{`
-      :global(html,body) {
-        margin: 0;
-        padding: 0;
-        height: 100%;
-      }
+if (env === 'test') {
+  port = 5000;
+  db = 'mongodb://localhost:27017/journalApp-test';
+}
 
-      :global(body) {
-        font-size: calc(10px + 1vmin);
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans',
-          'Droid Sans', 'Helvetica Neue', sans-serif;
-        -webkit-font-smoothing: antialiased;
-        -moz-osx-font-smoothing: grayscale;
+mongoose.Promise = global.Promise;
 
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        text-align: center;
-        background-color: #282c34;
-        color: white;
-      }
+app.use(cors());
+app.use(morgan('dev'));
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json());
+app.use('/api', routes(apiRouter));
 
-      a {
-        color: pink;
-        text-decoration: none;
-      }
+app.get('/', (req, res) => {
+  res.send('Hello World');
+});
 
-      .content {
-        padding: 0 32px;
-      }
-    `}</style>
-  </div>
-)
+const mongoConnection = mongoose.connect(db, {
+  useMongoClient: true,
+});
 
-export default Home
+mongoConnection.then(() => {
+  console.log('Database connection successful');
+}, (err) => {
+  console.log('An error occured while connecting to the database:', err.message);
+});
+
+app.listen(port, (err) => {
+  if (err) {
+    console.log('An error occured while connecting:', err);
+  }
+  console.log(`App listening 👂🏽 on port ${port}`);
+});
+
+module.exports = app;
